@@ -4,7 +4,7 @@ unsigned int count;
 void initial_t1()
 {
   T1IE = 1;
-  T1CTL = 0x09;
+  T1CTL = 0x09; //8分频0x05用60
   TIMIF |= 0x40;
   EA = 1;
 }
