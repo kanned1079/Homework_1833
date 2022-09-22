@@ -114,3 +114,4 @@ void main(void)
   URX0IF = 0;    // 清中断标志 
   temp = U0DBUF;                           
 }
+
