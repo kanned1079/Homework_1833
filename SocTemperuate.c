@@ -1,37 +1,37 @@
 #include <ioCC2530.h>
-#include "InitUART_Timer.h"	//ע���� option ������·��
+#include "InitUART_Timer.h"	//注意在 option 里设置路径
 #include "stdio.h"
 /****************************************************************
-�¶ȴ�������ʼ������
+温度传感器初始化函数
 ****************************************************************/ 
 void initTempSensor(void)
  
 {
-  DISABLE_ALL_INTERRUPTS();		//�ر������ж� 
-  InitClock();	//����ϵͳ��ʱ��Ϊ 32M
+  DISABLE_ALL_INTERRUPTS();		//关闭所有中断 
+  InitClock();	//设置系统主时钟为 32M
   TR0=0X01;	//set '1' to connectthe temperature sensorto the SOC_ADC.
   ATEST=0X01;	// Enablesthe temperature sensor
 
 }
 /****************************************************************
-��ȡ�¶ȴ����� AD  ֵ����
+读取温度传感器 AD  值函数
 ****************************************************************/ 
 float getTemperature(void)
 {
 
   uint	value;
-  ADCCON3	= (0x3E);	//ѡ�� 1.25V Ϊ�ο���ѹ��12 λ�ֱ��ʣ� ��Ƭ���¶ȴ���������
-  ADCCON1 |= 0x30;	//ѡ�� ADC ������ģʽΪ�ֶ�
-  ADCCON1 |= 0x40;	//���� AD ת��
-  while(!(ADCCON1 & 0x80));	//�ȴ� AD  ת�����
-  value =	ADCL >> 4;	//ADCL  �Ĵ����� 4  λ��Ч
+  ADCCON3	= (0x3E);	//选择 1.25V 为参考电压；12 位分辨率； 对片内温度传感器采样
+  ADCCON1 |= 0x30;	//选择 ADC 的启动模式为手动
+  ADCCON1 |= 0x40;	//启动 AD 转化
+  while(!(ADCCON1 & 0x80));	//等待 AD  转换完成
+  value =	ADCL >> 4;	//ADCL  寄存器低 4  位无效
   value |= (((UINT16)ADCH) << 4);
-  return (value-1367.5)/4.5-4;	//���� AD  ֵ�������ʵ�ʵ��¶�,оƬ��
-//�ֲ��д����¶�ϵ��Ӧ���� 4.5 /��
-//�����¶�У���������ȥ 4�棨��ͬо Ƭ���ݾ������У����
+  return (value-1367.5)/4.5-4;	//根据 AD  值，计算出实际的温度,芯片、
+//手册有错，温度系数应该是 4.5 /℃
+//进行温度校正，这里减去 4℃（不同芯 片根据具体情况校正）
 }
 /****************************************************************
-������
+主函数
 ****************************************************************/
 void main(void)
 {
@@ -39,8 +39,8 @@ void main(void)
   char I;
   char TempValue[6]; 
   float AvgTemp;
-  InitUART0();	//��ʼ������
-  initTempSensor();	//��ʼ�� ADC 
+  InitUART0();	//初始化串口
+  initTempSensor();	//初始化 ADC 
   while(1)
   {
 
@@ -49,18 +49,18 @@ void main(void)
       {
 
         AvgTemp += getTemperature();
-        AvgTemp=AvgTemp/2;	//ÿ���ۼӺ�� 2
+        AvgTemp=AvgTemp/2;	//每次累加后除 2
       }
-/****�¶�ת���� ascii �뷢��****/
+/****温度转换成 ascii 码发送****/
     
     UartTX_Send_String("Wuchenghao",10);
-    TempValue[0] = (unsigned char)(AvgTemp)/10 + 48;		//ʮλ 
-    TempValue[1] = (unsigned char)(AvgTemp)%10 + 48;		//��λ 
-    TempValue[2] = '.';	//С����
-    TempValue[3] = (unsigned char)(AvgTemp*10)%10+48; //ʮ��λ 
-    TempValue[4] = (unsigned char)(AvgTemp*100)%10+48; //�ٷ�λ 
-    TempValue[5] = '\0';	//�ַ���������
+    TempValue[0] = (unsigned char)(AvgTemp)/10 + 48;		//十位 
+    TempValue[1] = (unsigned char)(AvgTemp)%10 + 48;		//个位 
+    TempValue[2] = '.';	//小数点
+    TempValue[3] = (unsigned char)(AvgTemp*10)%10+48; //十分位 
+    TempValue[4] = (unsigned char)(AvgTemp*100)%10+48; //百分位 
+    TempValue[5] = '\0';	//字符串结束符
     UartTX_Send_String( TempValue,6);
-    Delayms(2000);	//ʹ�� 32M ���񣬹����� 2000 Լ���� 1S
+    Delayms(2000);	//使用 32M 晶振，故这里 2000 约等于 1S
   }
-}
+} 
