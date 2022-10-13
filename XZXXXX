@@ -1,0 +1,41 @@
+void initUART();
+void UartTX_Send_String(int8 *Data, int len);
+
+void initUART()
+{
+  PERCFG = 0x00;
+  P0SEL = 0x0c;
+  P2DIR &= ~0xc0;
+  
+  U0CSR |= 0x80;
+  U0GCR |= 11;
+  U0BAUD |= 216;
+  UTX0IF = 0;
+}
+
+/***********************************************************************************
+* @fn          appTimerISR
+*
+* @brief       32KHz timer interrupt service routine. Signals PER test transmitter
+*              application to transmit a packet by setting application state.
+*
+* @param       none
+*
+* @return      none
+*/
+
+void UartTX_Send_String(int8 *Data, int len)
+{
+  int j;
+  for(j=0; j<len; j++)
+  {
+    U0DBUF = *Data++;
+    while(UTX0IF == 0);
+    UTX0IF = 0;
+  }
+}
+
+static void appTimerISR(void)
+{
+    appState = TRANSMIT_PACKET;
+}
